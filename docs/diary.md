@@ -22,7 +22,6 @@ _Last updated: 2026-11-08_
 3. Complete "Project rules" in `CLAUDE.md` once the dbt project exists.
 
 **Open items**
-- [ ] Confirm `/diary` launches as a command in a new session (see step 12).
 - [ ] `scripts/create_raw_iowa_sales.sql` has never been run or validated as saved.
 - [ ] Check "Table expiration" on `raw.iowa_sales` in the BigQuery console. The sandbox
       is believed to expire whole tables after 60 days, not only partitions.
@@ -126,7 +125,15 @@ _Last updated: 2026-11-08_
 - **Problem:** Claude Code returned `Unknown skill: diary` in the session that created it.
 - **Fix:** followed the steps in `SKILL.md` by hand to produce this update.
 - **Verified:** the written instructions work. Launching `/diary` as a command was
-  not verified.
+  not verified at this point (see step 13).
+
+### 13. `/diary` tested as a command
+- **Did:** ran `/diary` by typing it, which produced this entry and added `793a4ed`
+  to the commits table.
+- **Verified:** the command launches and its steps run from `SKILL.md`. It worked in
+  the same session that created it, once typed by the user.
+- **Not verified:** why the earlier `Unknown skill` error happened. The likely cause
+  was that the new skill had not been picked up yet.
 
 ### Commits
 
@@ -136,3 +143,4 @@ _Last updated: 2026-11-08_
 | `2ec7e42` | Add pre-commit hook to block private keys |
 | `71365ce` | Prepare project for public release |
 | `92b4a61` | Add script to audit git history for secrets |
+| `793a4ed` | Add project diary, session routine and /diary skill |
