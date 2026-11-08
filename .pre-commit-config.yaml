@@ -1,0 +1,9 @@
+# Checks that run automatically before each commit.
+# After cloning, enable them once with: uv run pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Blocks files containing a private key, such as a BigQuery
+      # service account JSON, whatever the file is called.
+      - id: detect-private-key
