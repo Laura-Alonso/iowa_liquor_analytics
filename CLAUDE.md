@@ -28,5 +28,9 @@
 - dbt v2 (PyPI package `dbt`; BigQuery support is built in, no separate
   adapter package). Editor: VS Code.
 
+## Session routine
+- At the start of a session, read "Pick up here" in `docs/diary.md`.
+- At the end of a task, propose an update to `docs/diary.md` (with `/diary`).
+
 ## Project rules
 <!-- To be completed after the dbt project is created (/init) -->
