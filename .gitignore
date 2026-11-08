@@ -25,11 +25,17 @@ profiles.yml
 *service_account*.json
 *keyfile*.json
 *credentials*.json
+*sa-key*.json
+*gcp*key*.json
+client_secret*.json
+gha-creds-*.json
 *.pem
 *.p12
+*.key
 
 # Local tooling
 .claude/settings.local.json
+CLAUDE.local.md
 
 # OS / editors
 .DS_Store
