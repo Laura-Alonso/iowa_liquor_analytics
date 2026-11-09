@@ -4,13 +4,14 @@
 #
 #   scripts/audit_history.sh [email-to-search-for]
 #
-# The email is optional and passed as an argument so it is never stored here.
+# The email is optional and passed as an argument, or through the AUDIT_EMAIL
+# environment variable, so it is never stored here.
 # Exit codes: 0 = clean, 1 = something found, 2 = the audit itself failed.
 # It recognizes known secret formats, so a clean result is not a guarantee.
 set -u
 
 cd "$(git rev-parse --show-toplevel)" || exit 2
-email=${1:-}
+email=${1:-${AUDIT_EMAIL:-}}
 found=0
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -63,6 +64,8 @@ scan "JWT" 'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'
 scan "password/secret/token assignment" "(password|passwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token)[[:space:]]*[:=][[:space:]]*[\"']?[^[:space:]\"']{6,}"
 scan "URL with embedded login" '[a-z]+://[^/[:space:]:]+:[^/[:space:]@]+@'
 scan "any Gmail address" '@gmail\.com'
+scan "home-folder path" '/Users/[a-z]|/home/[a-z]'
+scan "international phone number" '\+[0-9]{2}[ -]?[0-9]{3}[ -]?[0-9]{3}[ -]?[0-9]{3}'
 
 echo "=== Commit metadata and messages ==="
 git log --all --format='author: %an <%ae>%ncommitter: %cn <%ce>' | sort | uniq -c

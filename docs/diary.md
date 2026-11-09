@@ -17,6 +17,8 @@ _Last updated: 2026-11-09_
   credentials file is in `~/.config/gcloud/`, outside the repo.
 - Session handoff: this diary, the session routine in `CLAUDE.md`, and the `/diary`
   skill in `.claude/skills/diary/SKILL.md`.
+- Security check: the `/audit` skill runs `scripts/audit_history.sh` and reports what
+  would be pushed. The email to search for comes from `AUDIT_EMAIL` in the shell profile.
 - The dbt project has **not** been created yet.
 
 **Next steps**
@@ -188,3 +190,24 @@ _Last updated: 2026-11-09_
 - **Verified:** the date matched the console. A 100-day window produced the warning, and
   a missing table and an invalid argument both exited 2.
 - **Not verified:** this used the `gcloud` login, not ADC, so it doesn't test dbt's access.
+
+### 5. `/audit` skill and wider audit
+- **Did:** added `.claude/skills/audit/SKILL.md`, which runs the audit and reports what
+  would be pushed. It changes nothing and asks before any push.
+- **Did:** `scripts/audit_history.sh` now also searches for home-folder paths and
+  international phone numbers, and can read the email from `AUDIT_EMAIL`.
+- **Why:** the email stays out of the repo and doesn't have to be typed each time.
+- **Changed:** `.claude/skills/audit/SKILL.md`, `scripts/audit_history.sh`.
+- **Problem:** appending `AUDIT_EMAIL` with `>>` broke the last line of `~/.zshrc`, because
+  the file had no final line break. Syntax highlighting would not have loaded.
+- **Fix:** added the missing line break. Lesson: check the end of a file before appending.
+- **Verified:** the real repo stayed clean. In a throwaway copy, fake data triggered the
+  home-path, phone and email searches with exit code 1. A new shell sees `AUDIT_EMAIL`.
+- **Not verified:** launching `/audit` as a command, and a run using `AUDIT_EMAIL` from
+  the shell profile. It needs a Claude Code restart to see the variable.
+
+### Commits
+
+| Commit | Message |
+|---|---|
+| `863ecda` | Add table expiration check script and log gcloud setup |
