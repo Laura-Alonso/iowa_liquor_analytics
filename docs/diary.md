@@ -5,13 +5,16 @@ Read **Pick up here** first when resuming work.
 
 ## Pick up here
 
-_Last updated: 2026-11-08_
+_Last updated: 2026-11-09_
 
 **Current state**
 - Repo: <https://github.com/Laura-Alonso/iowa_liquor_analytics> (public), branch `main`.
-- Environment: Python 3.12, uv, dbt 2.0.11, pre-commit 4.7.0.
+- Environment: Python 3.12, uv, dbt 2.0.11, pre-commit 4.7.0, Google Cloud CLI 592.0.0
+  (includes `bq` 2.1.41).
 - BigQuery: sandbox project `iowa-liquor-lab`. The raw table was created by hand in
   the console and its SQL is saved in `scripts/create_raw_iowa_sales.sql`.
+- Authentication: gcloud OAuth with Application Default Credentials (ADC). The
+  credentials file is in `~/.config/gcloud/`, outside the repo.
 - Session handoff: this diary, the session routine in `CLAUDE.md`, and the `/diary`
   skill in `.claude/skills/diary/SKILL.md`.
 - The dbt project has **not** been created yet.
@@ -23,9 +26,9 @@ _Last updated: 2026-11-08_
 
 **Open items**
 - [ ] `scripts/create_raw_iowa_sales.sql` has never been run or validated as saved.
-- [ ] Check "Table expiration" on `raw.iowa_sales` in the BigQuery console. The sandbox
-      is believed to expire whole tables after 60 days, not only partitions.
-- [ ] Decide whether to install the Google Cloud CLI so the script can run with `bq`.
+      It uses `create or replace table`, so running it overwrites `raw.iowa_sales`.
+- [ ] `raw.iowa_sales` has a table expiration set. Decide how to keep the data past it.
+      `scripts/check_raw_table.sh` shows the date and days left.
 - [ ] Add `scripts/setup.sh` (`uv sync` + `uv run pre-commit install`) for fresh clones.
 - [ ] Run `scripts/audit_history.sh` in GitHub Actions (decided, not built).
 - [ ] Optional: in GitHub email settings, turn on "Keep my email addresses private"
@@ -36,6 +39,7 @@ _Last updated: 2026-11-08_
 - No pre-push hook for the audit: pre-commit and GitHub push protection cover this.
 - The repo is public, and this diary stays public in it.
 - Git commits use the GitHub noreply address, never a personal email.
+- BigQuery authentication uses gcloud OAuth and ADC, with no service account keys.
 
 ---
 
@@ -144,3 +148,43 @@ _Last updated: 2026-11-08_
 | `71365ce` | Prepare project for public release |
 | `92b4a61` | Add script to audit git history for secrets |
 | `793a4ed` | Add project diary, session routine and /diary skill |
+| `a6c48ed` | Log /diary command test in the project diary |
+
+---
+
+## 2026-11-09: BigQuery authentication with gcloud
+
+### 1. Table expiration checked
+- **Did:** read "Table expiration" on `raw.iowa_sales` in the BigQuery console. The
+  table has an expiration set, so the open question from the first session is answered.
+- **Problem:** creating a Google Calendar reminder was blocked by Claude Code's
+  permission check.
+- **Decision:** keep the reminder in Claude Code's project memory only. It appears
+  only if a session is opened in time, and no calendar event was created.
+
+### 2. Google Cloud CLI installed
+- **Did:** installed the `gcloud-cli` Homebrew cask, which provides `gcloud` and `bq`.
+- **Why:** needed for BigQuery authentication, and it lets scripts run with `bq`.
+- **Verified:** `gcloud --version` and `bq --version` ran. No PATH change was needed.
+- **Not done:** the install is not yet in a script. Shell completion was not set up.
+
+### 3. BigQuery authentication
+- **Did:** ran `gcloud auth login`, set the default project to `iowa-liquor-lab`, and
+  ran `gcloud auth application-default login`.
+- **Decision:** gcloud OAuth instead of service account keys.
+- **Why two logins:** the first is for `gcloud` and `bq`; ADC is what other programs
+  on the Mac are expected to use, such as dbt.
+- **Problem:** `gcloud config` was first run without its arguments and errored.
+- **Fix:** ran the full `gcloud config set project iowa-liquor-lab`. Nothing had changed.
+- **Verified:** the ADC file exists with `600` permissions and is outside the repo, ADC
+  obtained an access token, and `iowa-liquor-lab` was added as its quota project.
+- **Not verified:** a real BigQuery query. `dbt debug` will be the first test.
+
+### 4. Table expiration check script
+- **Did:** added `scripts/check_raw_table.sh`, which reads a table's metadata with `bq`
+  and prints when it expires. Exit codes: 0 ok, 1 expires soon, 2 check failed.
+- **Why:** to check the expiration from code instead of the BigQuery console.
+- **Changed:** `scripts/check_raw_table.sh`.
+- **Verified:** the date matched the console. A 100-day window produced the warning, and
+  a missing table and an invalid argument both exited 2.
+- **Not verified:** this used the `gcloud` login, not ADC, so it doesn't test dbt's access.
