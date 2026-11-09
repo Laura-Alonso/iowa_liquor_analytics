@@ -1,0 +1,20 @@
+name: iowa_liquor
+
+profile: iowa_liquor
+
+seed-paths: ["seeds"]
+model-paths: ["models"]
+macro-paths: ["macros"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  iowa_liquor:
+    # strict needs `dbt login`; without it dbt silently falls back to baseline.
+    +static_analysis: baseline
+    # Materialize staging models as views, and marts as tables
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table

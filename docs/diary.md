@@ -19,19 +19,22 @@ _Last updated: 2026-11-09_
   skill in `.claude/skills/diary/SKILL.md`.
 - Security check: the `/audit` skill runs `scripts/audit_history.sh` and reports what
   would be pushed. The email to search for comes from `AUDIT_EMAIL` in the shell profile.
-- The dbt project has **not** been created yet.
+- dbt project: at the repo root, name and profile `iowa_liquor`. It has only
+  `dbt_project.yml` so far, with no models. The connection is in `~/.dbt/profiles.yml`,
+  and `dbt debug` passes.
 
 **Next steps**
-1. Create the dbt project and `profiles.yml` (kept in `~/.dbt/`, never in the repo).
-2. Run `dbt debug` to test the BigQuery connection for the first time.
-3. Complete "Project rules" in `CLAUDE.md` once the dbt project exists.
+1. Phase 1: build the first staging model.
+2. Complete "Project rules" in `CLAUDE.md`.
 
 **Open items**
-- [ ] `scripts/create_raw_iowa_sales.sql` has never been run or validated as saved.
-      It uses `create or replace table`, so running it overwrites `raw.iowa_sales`.
+- [ ] Run `scripts/create_raw_iowa_sales.sql` with `bq` (now possible). It has never been
+      run or validated as saved, and `create or replace table` overwrites `raw.iowa_sales`.
 - [ ] `raw.iowa_sales` has a table expiration set. Decide how to keep the data past it.
       `scripts/check_raw_table.sh` shows the date and days left.
 - [ ] Add `scripts/setup.sh` (`uv sync` + `uv run pre-commit install`) for fresh clones.
+- [ ] Add `profiles.example.yml` (no secrets) and a copy step in `scripts/setup.sh`.
+- [ ] Optional: try `static_analysis: strict` after `dbt login`.
 - [ ] Run `scripts/audit_history.sh` in GitHub Actions (decided, not built).
 - [ ] Optional: in GitHub email settings, turn on "Keep my email addresses private"
       and "Block command line pushes that expose my email".
@@ -42,6 +45,7 @@ _Last updated: 2026-11-09_
 - The repo is public, and this diary stays public in it.
 - Git commits use the GitHub noreply address, never a personal email.
 - BigQuery authentication uses gcloud OAuth and ADC, with no service account keys.
+- Commits keep the Claude `Co-Authored-By` trailer.
 
 ---
 
@@ -165,7 +169,8 @@ _Last updated: 2026-11-09_
   only if a session is opened in time, and no calendar event was created.
 
 ### 2. Google Cloud CLI installed
-- **Did:** installed the `gcloud-cli` Homebrew cask, which provides `gcloud` and `bq`.
+- **Did:** installed the `gcloud-cli` Homebrew cask (SDK 592.0.0, `bq` 2.1.41), which
+  provides `gcloud` and `bq`. This closes the open decision on installing the CLI.
 - **Why:** needed for BigQuery authentication, and it lets scripts run with `bq`.
 - **Verified:** `gcloud --version` and `bq --version` ran. No PATH change was needed.
 - **Not done:** the install is not yet in a script. Shell completion was not set up.
@@ -173,7 +178,8 @@ _Last updated: 2026-11-09_
 ### 3. BigQuery authentication
 - **Did:** ran `gcloud auth login`, set the default project to `iowa-liquor-lab`, and
   ran `gcloud auth application-default login`.
-- **Decision:** gcloud OAuth instead of service account keys.
+- **Decision:** gcloud OAuth instead of service account keys, so there is no key file
+  to leak.
 - **Why two logins:** the first is for `gcloud` and `bq`; ADC is what other programs
   on the Mac are expected to use, such as dbt.
 - **Problem:** `gcloud config` was first run without its arguments and errored.
@@ -206,8 +212,45 @@ _Last updated: 2026-11-09_
 - **Not verified:** launching `/audit` as a command, and a run using `AUDIT_EMAIL` from
   the shell profile. It needs a Claude Code restart to see the variable.
 
+### 6. `/audit` tested as a command
+- **Did:** typed `/audit` after restarting Claude Code. It reported clean on all 8 commits.
+- **Verified:** the command launches and the email search runs from `AUDIT_EMAIL`, which
+  is set in `~/.zshrc`. This closes the two "not verified" items in step 5.
+
+### 7. `bq` connection checked with a known answer
+- **Did:** queried `raw.iowa_sales` with `bq` for its row count and first day.
+- **Verified:** 11,044,589 rows, first day 2022-01-02.
+
+### 8. dbt project at the repo root
+- **Did:** ran `dbt init` outside the repo with `--skip-profile-setup`, because it creates
+  a subfolder and has no option to initialize into the current one.
+- **Decision:** keep only `dbt_project.yml` at the repo root, with name and profile
+  `iowa_liquor`. The jaffle-shop sample models, seeds and macro were not imported.
+- **Did:** removed the sample's `seeds:` block, and wrote `~/.dbt/profiles.yml` (gcloud
+  OAuth, `iowa-liquor-lab`, dataset `dbt_laura`, location US, 4 threads).
+- **Decision:** kept the `staging` (view) and `marts` (table) settings as a standard layout.
+- **Checked:** every `.gitignore` line from `dbt init` was already in the repo's file.
+- **Changed:** `dbt_project.yml`.
+
+### 9. `static_analysis` set to baseline
+- **Decision:** `baseline` instead of the sample's `strict`, so the file says what really
+  runs. `strict` needs `dbt login`, and otherwise dbt silently falls back to `baseline`.
+- **Verified:** the login requirement and fallback are in dbt's v2 upgrade guide.
+- **Changed:** `dbt_project.yml`, with a one-line comment explaining this.
+
+### 10. `dbt debug` and control test
+- **Did:** ran `dbt debug`. All checks passed, using `oauth`, `iowa-liquor-lab`,
+  `dbt_laura` and `US`. This is the first test of dbt's access through ADC.
+- **Verified:** the control `dbt debug --profile does_not_exist` failed with exit code 1
+  and `Profile 'does_not_exist' not found`.
+- **Learned:** the ADBC BigQuery driver is cached outside the repo, in
+  `~/Library/Caches/com.getdbt/adbc/`. It is a dev build (0.21.0.dev).
+- **Not verified:** dbt reading `raw.iowa_sales` or creating tables. The `dbt_laura`
+  dataset has not been created yet.
+
 ### Commits
 
 | Commit | Message |
 |---|---|
 | `863ecda` | Add table expiration check script and log gcloud setup |
+| `a3f27c6` | Add /audit skill and search for home paths and phone numbers |
